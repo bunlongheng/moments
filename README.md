@@ -1,36 +1,70 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+# Moments - Digital Photo Frame
 
-## Getting Started
+Turn any spare screen into a digital photo frame. Clean, minimal slideshow designed for always-on ambient displays.
 
-First, run the development server:
+## Tech Stack
 
-```bash
-npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
+| Layer | Technology |
+|-------|-----------|
+| Framework | Next.js 16.2.4 |
+| UI | React 19.2.4, TypeScript, Tailwind CSS |
+| Image Processing | Sharp (resize, transform, style filters) |
+| Database | None -- file-based / transient |
+| Port | Assigned by local-apps |
+
+## Architecture
+
+```
+[Image Source]
+    |
+    v
+[Sharp Pipeline] ---> resize / transform / apply style filters
+    |
+    v
+[Next.js App] ---> renders slideshow on connected display
+    |
+    v
+[iPad / Spare Monitor / Any Browser]
 ```
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+- Sharp handles all image manipulation: resize, transform, and style filters
+- No database -- images are processed on the fly or served from the filesystem
+- Designed for always-on displays with a clean, distraction-free UI
+- Responsive layout adapts to any screen size
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+## Features
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+- Digital photo frame display for ambient screens
+- Image upload and transformation API
+- Style filters and transforms via Sharp
+- Designed for always-on displays (iPad, spare monitor)
+- Clean, minimal UI for photo slideshow
+- Responsive to any screen size and orientation
 
-## Learn More
+## Project Structure
 
-To learn more about Next.js, take a look at the following resources:
+```
+moments/
+  src/
+    app/             # Next.js App Router pages
+    components/      # React components (slideshow, controls)
+    lib/             # Sharp image processing utilities
+  public/            # Static assets, sample images
+  next.config.ts     # Next.js configuration
+```
 
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
+## Scripts
 
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
+| Command | Description |
+|---------|------------|
+| `npm run dev` | Start dev server |
+| `npm run build` | Production build |
+| `npm start` | Start production server |
 
-## Deploy on Vercel
+## Environment Variables
 
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
+None required. Moments is fully self-contained.
 
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+---
+
+Built by [Bunlong Heng](https://www.bunlongheng.com) | [GitHub](https://github.com/bunlongheng/moments)
