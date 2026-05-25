@@ -48,7 +48,7 @@ export default function DisplayPage() {
         return () => clearInterval(timer);
     }, [refresh]);
 
-    // BroadcastChannel — instant updates from upload tab
+    // BroadcastChannel — instant updates from upload tab (same browser)
     useEffect(() => {
         const bc = new BroadcastChannel("moments");
         bc.onmessage = (e) => {
@@ -56,6 +56,13 @@ export default function DisplayPage() {
             if (e.data?.type === "style-changed") setStyle(e.data.style);
         };
         return () => bc.close();
+    }, [refresh]);
+
+    // SSE — instant updates from any device on the network
+    useEffect(() => {
+        const es = new EventSource("/api/events");
+        es.onmessage = () => refresh();
+        return () => es.close();
     }, [refresh]);
 
     // Advance slideshow

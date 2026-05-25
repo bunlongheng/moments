@@ -78,6 +78,13 @@ export default function UploadPage() {
 
     useEffect(() => { loadPhotos(); loadStyle(); }, [loadPhotos, loadStyle]);
 
+    // SSE — stay in sync with changes made from any other device
+    useEffect(() => {
+        const es = new EventSource("/api/events");
+        es.onmessage = () => { loadPhotos(); loadStyle(); };
+        return () => es.close();
+    }, [loadPhotos, loadStyle]);
+
     // Upload files
     const uploadFiles = useCallback(async (files: FileList | File[]) => {
         const imageFiles = Array.from(files).filter(f => f.type.startsWith("image/"));

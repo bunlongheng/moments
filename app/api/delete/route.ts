@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
 import { getMeta, saveMeta, photoPath } from "@/lib/storage";
+import { publish } from "@/lib/events";
 import fs from "fs";
 
 export async function POST(req: Request) {
@@ -11,6 +12,7 @@ export async function POST(req: Request) {
         if (fs.existsSync(fp)) fs.unlinkSync(fp);
         meta.version++;
         saveMeta(meta);
+        publish();
     }
     return NextResponse.json({ ok: true, count: meta.photos.length });
 }

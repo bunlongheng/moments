@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
 import { getMeta, saveMeta } from "@/lib/storage";
+import { publish } from "@/lib/events";
 
 const VALID_STYLES = ["ken-burns", "fade", "slide", "zoom", "none"];
 
@@ -14,5 +15,6 @@ export async function POST(req: Request) {
     meta.style = VALID_STYLES.includes(style) ? style : "ken-burns";
     meta.version++;
     saveMeta(meta);
+    publish();
     return NextResponse.json({ ok: true, style: meta.style });
 }

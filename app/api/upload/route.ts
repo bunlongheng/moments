@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
 import { getMeta, saveMeta, getPhotosDir } from "@/lib/storage";
+import { publish } from "@/lib/events";
 import sharp from "sharp";
 import path from "path";
 import crypto from "crypto";
@@ -33,6 +34,7 @@ export async function POST(req: Request) {
         meta.photos.push(filename);
         meta.version++;
         saveMeta(meta);
+        publish();
 
         return NextResponse.json({ ok: true, count: meta.photos.length, filename });
     } catch (e: any) {

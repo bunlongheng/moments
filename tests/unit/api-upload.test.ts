@@ -136,4 +136,14 @@ describe("POST /api/upload", () => {
         const b = await (await POST(uploadReq(pngFile()))).json();
         expect(a.filename).not.toBe(b.filename);
     });
+
+    it("notifies SSE subscribers after a successful upload", async () => {
+        const events = await import("@/lib/events");
+        let fired = 0;
+        const l = () => fired++;
+        events.subscribe(l);
+        await POST(uploadReq(pngFile()));
+        events.unsubscribe(l);
+        expect(fired).toBe(1);
+    });
 });

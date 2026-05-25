@@ -127,4 +127,15 @@ describe("POST /api/delete", () => {
         await POST(deleteReq({ index: 2 }));
         expect(JSON.parse(fs.readFileSync(metaFile, "utf-8")).photos).toEqual(["a.jpg", "b.jpg", "d.jpg"]);
     });
+
+    it("notifies SSE subscribers on a valid delete", async () => {
+        seed(["a.jpg", "b.jpg"]);
+        const events = await import("@/lib/events");
+        let fired = 0;
+        const l = () => fired++;
+        events.subscribe(l);
+        await POST(deleteReq({ index: 0 }));
+        events.unsubscribe(l);
+        expect(fired).toBe(1);
+    });
 });

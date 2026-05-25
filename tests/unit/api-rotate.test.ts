@@ -121,6 +121,17 @@ describe("POST /api/rotate", () => {
         expect((await res.json()).error).toBe("rotate boom");
     });
 
+    it("notifies SSE subscribers after rotating", async () => {
+        seed(["a.jpg"]);
+        const events = await import("@/lib/events");
+        let fired = 0;
+        const l = () => fired++;
+        events.subscribe(l);
+        await POST(rotateReq({ index: 0 }));
+        events.unsubscribe(l);
+        expect(fired).toBe(1);
+    });
+
     it("returns 404 when the file vanishes after the meta read", async () => {
         seed(["a.jpg"]);
         const target = path.join(photosDir, "a.jpg");

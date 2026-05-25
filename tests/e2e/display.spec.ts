@@ -27,6 +27,14 @@ test.describe("Display page", () => {
         await expect(page.getByAltText("Scan to add photos")).toBeVisible();
     });
 
+    test("updates in real time via SSE when a photo is added elsewhere", async ({ page, request }) => {
+        await page.goto("/");
+        await expect(page.getByText("Scan to add photos")).toBeVisible();
+        // Another device uploads; the frame should react well before the 10s poll.
+        await request.post("/api/upload", { multipart: { file: pngUpload() } });
+        await expect(page.locator("img.slide")).toHaveCount(1, { timeout: 4000 });
+    });
+
     test("displays a clock with the current time", async ({ page, request }) => {
         await request.post("/api/upload", { multipart: { file: pngUpload() } });
         await page.goto("/");

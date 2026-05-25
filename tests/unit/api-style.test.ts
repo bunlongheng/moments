@@ -79,4 +79,14 @@ describe("POST /api/style", () => {
         await POST(postReq({ style: "none" }));
         expect((await (await GET()).json()).style).toBe("none");
     });
+
+    it("notifies SSE subscribers", async () => {
+        const events = await import("@/lib/events");
+        let fired = 0;
+        const l = () => fired++;
+        events.subscribe(l);
+        await POST(postReq({ style: "fade" }));
+        events.unsubscribe(l);
+        expect(fired).toBe(1);
+    });
 });

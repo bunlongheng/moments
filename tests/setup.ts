@@ -65,3 +65,17 @@ class StubBroadcastChannel {
     }
 }
 vi.stubGlobal("BroadcastChannel", StubBroadcastChannel);
+
+/* ── EventSource stub (jsdom has none) — inert in unit tests ────────────────── */
+class StubEventSource {
+    url: string;
+    onmessage: ((e: MessageEvent) => void) | null = null;
+    onerror: ((e: Event) => void) | null = null;
+    constructor(url: string) {
+        this.url = url;
+    }
+    close() {}
+    addEventListener() {}
+    removeEventListener() {}
+}
+vi.stubGlobal("EventSource", StubEventSource);
