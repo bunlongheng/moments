@@ -75,6 +75,12 @@ export default function DisplayPage() {
         return () => clearInterval(timer);
     }, [urls, preload]);
 
+    // LAN QR (scan to open the upload page from a phone)
+    const [lan, setLan] = useState<{ url: string; qr: string } | null>(null);
+    useEffect(() => {
+        fetch("/api/lan").then(r => (r.ok ? r.json() : null)).then(d => d && setLan(d)).catch(() => {});
+    }, []);
+
     // Clock
     const [time, setTime] = useState("");
     useEffect(() => {
@@ -89,6 +95,12 @@ export default function DisplayPage() {
             <div style={{ width: "100vw", height: "100vh", display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", color: "#444", fontFamily: "-apple-system, sans-serif", fontSize: 24, gap: 20 }}>
                 <div style={{ fontSize: 48 }}>Moments</div>
                 <div style={{ fontSize: 16 }}>Open <code>/upload</code> to add photos</div>
+                {lan && (
+                    <div style={{ marginTop: 24, display: "flex", flexDirection: "column", alignItems: "center", gap: 10 }}>
+                        <img src={lan.qr} alt="Scan to add photos" width={180} height={180} style={{ background: "#fff", padding: 10, borderRadius: 14 }} />
+                        <div style={{ fontSize: 14, color: "#666" }}>Scan to add photos</div>
+                    </div>
+                )}
             </div>
         );
     }
@@ -137,6 +149,14 @@ export default function DisplayPage() {
                 <div style={{ position: "fixed", bottom: 20, left: 30, color: "rgba(255,255,255,0.5)", fontSize: 48, fontWeight: 200, fontFamily: "-apple-system, sans-serif", zIndex: 10 }}>
                     {time}
                 </div>
+
+                {/* Scan-to-add QR badge */}
+                {lan && (
+                    <div style={{ position: "fixed", bottom: 20, right: 24, display: "flex", flexDirection: "column", alignItems: "center", gap: 6, zIndex: 10 }}>
+                        <img src={lan.qr} alt="Scan to add photos" width={84} height={84} style={{ background: "#fff", padding: 6, borderRadius: 10, opacity: 0.92 }} />
+                        <div style={{ color: "rgba(255,255,255,0.6)", fontSize: 11, fontWeight: 500 }}>Scan to add</div>
+                    </div>
+                )}
             </div>
         </>
     );

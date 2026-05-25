@@ -1,7 +1,9 @@
 import fs from "fs";
 import path from "path";
 
-const DATA_DIR = path.join(process.cwd(), "data");
+const DATA_DIR = process.env.MOMENTS_DATA_DIR
+    ? path.resolve(process.env.MOMENTS_DATA_DIR)
+    : path.join(process.cwd(), "data");
 const PHOTOS_DIR = path.join(DATA_DIR, "photos");
 const META_FILE = path.join(DATA_DIR, "meta.json");
 
