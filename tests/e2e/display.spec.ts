@@ -17,7 +17,7 @@ test.describe("Display page", () => {
         expect(res.ok()).toBeTruthy();
 
         await page.goto("/");
-        await expect(page.locator("img.slide")).toHaveCount(1);
+        await expect(page.locator(".slide .fg")).toHaveCount(1);
         await expect(page.getByText("/upload")).toBeHidden();
     });
 
@@ -32,7 +32,7 @@ test.describe("Display page", () => {
         await expect(page.getByText("Scan to add photos")).toBeVisible();
         // Another device uploads; the frame should react well before the 10s poll.
         await request.post("/api/upload", { multipart: { file: pngUpload() } });
-        await expect(page.locator("img.slide")).toHaveCount(1, { timeout: 4000 });
+        await expect(page.locator(".slide .fg")).toHaveCount(1, { timeout: 4000 });
     });
 
     test("displays a clock with the current time", async ({ page, request }) => {

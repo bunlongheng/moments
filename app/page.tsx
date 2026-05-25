@@ -102,13 +102,13 @@ export default function DisplayPage() {
 
     if (urls.length === 0) {
         return (
-            <div style={{ width: "100vw", height: "100vh", display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", color: "#444", fontFamily: "-apple-system, sans-serif", fontSize: 24, gap: 20 }}>
-                <div style={{ fontSize: 48 }}>Moments</div>
-                <div style={{ fontSize: 16 }}>Open <code>/upload</code> to add photos</div>
+            <div style={{ width: "100vw", height: "100vh", display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", color: "#444", fontFamily: "-apple-system, sans-serif", fontSize: "1.3vw", gap: "2vh" }}>
+                <div style={{ fontSize: "2.6vw" }}>Moments</div>
+                <div style={{ fontSize: "0.9vw" }}>Open <code>/upload</code> to add photos</div>
                 {lan && (
-                    <div style={{ marginTop: 24, display: "flex", flexDirection: "column", alignItems: "center", gap: 10 }}>
-                        <img src={lan.qr} alt="Scan to add photos" width={180} height={180} style={{ background: "#fff", padding: 10, borderRadius: 14 }} />
-                        <div style={{ fontSize: 14, color: "#666" }}>Scan to add photos</div>
+                    <div style={{ marginTop: "2vh", display: "flex", flexDirection: "column", alignItems: "center", gap: "1vh" }}>
+                        <img src={lan.qr} alt="Scan to add photos" style={{ width: "9.5vw", height: "9.5vw", background: "#fff", padding: "0.5vw", borderRadius: "0.7vw" }} />
+                        <div style={{ fontSize: "0.75vw", color: "#666" }}>Scan to add photos</div>
                     </div>
                 )}
             </div>
@@ -131,7 +131,9 @@ export default function DisplayPage() {
     return (
         <>
             <style>{`
-                .slide { position:absolute;top:0;left:0;width:100vw;height:100vh;object-fit:cover;opacity:0;will-change:transform,opacity; }
+                .slide { position:absolute;top:0;left:0;width:100vw;height:100vh;overflow:hidden;opacity:0;will-change:transform,opacity; }
+                .slide .bg { position:absolute;inset:0;width:100%;height:100%;object-fit:cover;filter:blur(40px) brightness(0.5);transform:scale(1.18); }
+                .slide .fg { position:absolute;inset:0;width:100%;height:100%;object-fit:contain; }
                 .slide.active { opacity:1;transition:opacity 1.5s ease; }
                 .slide.no-anim { opacity:1;transition:none; }
                 .slide.leaving { opacity:0;transition:opacity 2s ease;filter:blur(20px);transform:scale(1.1); }
@@ -149,22 +151,28 @@ export default function DisplayPage() {
                 @keyframes zoomIn { 0%{transform:scale(0.6);opacity:0} 100%{transform:scale(1);opacity:1} }
             `}</style>
             <div style={{ width: "100vw", height: "100vh", overflow: "hidden", position: "relative", background: "#000" }}>
-                {/* Show current and previous (for crossfade) */}
+                {/* Each slide: blurred cover backdrop + full (contain) photo, so portraits fit by height */}
                 {prevIdx >= 0 && prevIdx !== idx && (
-                    <img key={`prev-${prevIdx}`} src={urls[prevIdx]} alt="" className={`slide ${getTransitionClass(false, true)}`} />
+                    <div key={`prev-${prevIdx}`} className={`slide ${getTransitionClass(false, true)}`}>
+                        <img src={urls[prevIdx]} alt="" className="bg" />
+                        <img src={urls[prevIdx]} alt="" className="fg" />
+                    </div>
                 )}
-                <img key={`cur-${idx}`} src={urls[idx]} alt="" className={`slide ${getTransitionClass(true, false)}`} />
+                <div key={`cur-${idx}`} className={`slide ${getTransitionClass(true, false)}`}>
+                    <img src={urls[idx]} alt="" className="bg" />
+                    <img src={urls[idx]} alt="" className="fg" />
+                </div>
 
-                {/* Clock */}
-                <div style={{ position: "fixed", bottom: 20, left: 30, color: "rgba(255,255,255,0.5)", fontSize: 48, fontWeight: 200, fontFamily: "-apple-system, sans-serif", zIndex: 10 }}>
+                {/* Clock (viewport-relative so the preview scales faithfully) */}
+                <div style={{ position: "fixed", bottom: "1.8vh", left: "1.6vw", color: "rgba(255,255,255,0.5)", fontSize: "2.6vw", fontWeight: 200, fontFamily: "-apple-system, sans-serif", zIndex: 10 }}>
                     {time}
                 </div>
 
                 {/* Scan-to-add QR badge */}
                 {lan && (
-                    <div style={{ position: "fixed", bottom: 20, right: 24, display: "flex", flexDirection: "column", alignItems: "center", gap: 6, zIndex: 10 }}>
-                        <img src={lan.qr} alt="Scan to add photos" width={84} height={84} style={{ background: "#fff", padding: 6, borderRadius: 10, opacity: 0.92 }} />
-                        <div style={{ color: "rgba(255,255,255,0.6)", fontSize: 11, fontWeight: 500 }}>Scan to add</div>
+                    <div style={{ position: "fixed", bottom: "1.8vh", right: "1.3vw", display: "flex", flexDirection: "column", alignItems: "center", gap: "0.4vh", zIndex: 10 }}>
+                        <img src={lan.qr} alt="Scan to add photos" style={{ width: "4.4vw", height: "4.4vw", background: "#fff", padding: "0.3vw", borderRadius: "0.5vw", opacity: 0.92 }} />
+                        <div style={{ color: "rgba(255,255,255,0.6)", fontSize: "0.6vw", fontWeight: 500 }}>Scan to add</div>
                     </div>
                 )}
             </div>

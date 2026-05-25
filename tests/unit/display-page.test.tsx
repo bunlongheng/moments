@@ -26,6 +26,9 @@ async function renderDisplay() {
     return utils;
 }
 
+/** Source of the foreground photo in a slide (the `.fg` image). */
+const fgSrc = (c: HTMLElement) => c.querySelector(".slide .fg")?.getAttribute("src");
+
 describe("DisplayPage empty state", () => {
     it("shows the Moments title when there are no photos", async () => {
         await renderDisplay();
@@ -37,25 +40,32 @@ describe("DisplayPage empty state", () => {
         expect(await screen.findByText("/upload")).toBeInTheDocument();
     });
 
-    it("renders no slide image when empty", async () => {
+    it("renders no slide when empty", async () => {
         const { container } = await renderDisplay();
         await screen.findByText("Moments");
-        expect(container.querySelector("img.slide")).toBeNull();
+        expect(container.querySelector(".slide")).toBeNull();
     });
 });
 
 describe("DisplayPage with photos", () => {
-    it("renders a slide image for the current photo", async () => {
+    it("renders the current photo as the foreground image", async () => {
         db.photos = ["/api/photo/a.jpg"];
         const { container } = await renderDisplay();
-        await waitFor(() => expect(container.querySelector("img.slide")).not.toBeNull());
-        expect(container.querySelector("img.slide")!.getAttribute("src")).toBe("/api/photo/a.jpg");
+        await waitFor(() => expect(container.querySelector(".slide .fg")).not.toBeNull());
+        expect(fgSrc(container)).toBe("/api/photo/a.jpg");
+    });
+
+    it("renders a blurred backdrop copy of the photo", async () => {
+        db.photos = ["/api/photo/a.jpg"];
+        const { container } = await renderDisplay();
+        await waitFor(() => expect(container.querySelector(".slide .bg")).not.toBeNull());
+        expect(container.querySelector(".slide .bg")!.getAttribute("src")).toBe("/api/photo/a.jpg");
     });
 
     it("does not show the empty-state prompt when photos exist", async () => {
         db.photos = ["/api/photo/a.jpg"];
         const { container } = await renderDisplay();
-        await waitFor(() => expect(container.querySelector("img.slide")).not.toBeNull());
+        await waitFor(() => expect(container.querySelector(".slide")).not.toBeNull());
         expect(screen.queryByText("/upload")).toBeNull();
     });
 
@@ -65,11 +75,11 @@ describe("DisplayPage with photos", () => {
         expect(await screen.findByText(/\d{1,2}:\d{2}/)).toBeInTheDocument();
     });
 
-    it("uses an empty alt for the decorative slide", async () => {
+    it("uses an empty alt for the decorative foreground image", async () => {
         db.photos = ["/api/photo/a.jpg"];
         const { container } = await renderDisplay();
-        await waitFor(() => expect(container.querySelector("img.slide")).not.toBeNull());
-        expect(container.querySelector("img.slide")!.getAttribute("alt")).toBe("");
+        await waitFor(() => expect(container.querySelector(".slide .fg")).not.toBeNull());
+        expect(container.querySelector(".slide .fg")!.getAttribute("alt")).toBe("");
     });
 });
 
@@ -82,13 +92,13 @@ describe("DisplayPage transition styles", () => {
         ["none", "no-anim"],
     ];
 
-    it.each(cases)("applies the %s transition class", async (style, token) => {
+    it.each(cases)("applies the %s transition class to the slide", async (style, token) => {
         db.photos = ["/api/photo/a.jpg"];
         db.style = style;
         const { container } = await renderDisplay();
         await waitFor(() => {
-            const img = container.querySelector("img.slide");
-            expect(img?.className).toContain(token);
+            const slide = container.querySelector(".slide");
+            expect(slide?.className).toContain(token);
         });
     });
 });
@@ -103,20 +113,20 @@ describe("DisplayPage live updates", () => {
             ch.postMessage({ type: "photos-changed" });
             await Promise.resolve();
         });
-        await waitFor(() => expect(container.querySelector("img.slide")).not.toBeNull());
+        await waitFor(() => expect(container.querySelector(".slide")).not.toBeNull());
     });
 
     it("updates the transition style on a style-changed broadcast", async () => {
         db.photos = ["/api/photo/a.jpg"];
         db.style = "fade";
         const { container } = await renderDisplay();
-        await waitFor(() => expect(container.querySelector("img.slide")).not.toBeNull());
+        await waitFor(() => expect(container.querySelector(".slide")).not.toBeNull());
         await act(async () => {
             const ch = new BroadcastChannel("moments");
             ch.postMessage({ type: "style-changed", style: "slide" });
             await Promise.resolve();
         });
-        await waitFor(() => expect(container.querySelector("img.slide")!.className).toContain("slide-in"));
+        await waitFor(() => expect(container.querySelector(".slide")!.className).toContain("slide-in"));
     });
 });
 
@@ -130,19 +140,17 @@ describe("DisplayPage slideshow advance", () => {
         await act(async () => {
             ({ container } = render(<DisplayPage />));
         });
-        // Flush the initial fetch so urls are populated and the advance effect arms.
         await act(async () => {
-            await vi.advanceTimersByTimeAsync(0);
+            await vi.advanceTimersByTimeAsync(0); // flush fetch + arm advance effect
         });
-        // Trigger the slideshow interval.
         await act(async () => {
-            await vi.advanceTimersByTimeAsync(10000);
+            await vi.advanceTimersByTimeAsync(10000); // cross the slide boundary
         });
-        const imgs = Array.from(container.querySelectorAll("img.slide"));
-        const current = imgs.find((i) => i.className.includes("active"));
-        const leaving = imgs.find((i) => i.className.includes("leaving"));
-        expect(current?.getAttribute("src")).toBe("/api/photo/b.jpg");
-        expect(leaving?.getAttribute("src")).toBe("/api/photo/a.jpg");
+        const slides = Array.from(container.querySelectorAll(".slide"));
+        const current = slides.find((s) => s.className.includes("active"));
+        const leaving = slides.find((s) => s.className.includes("leaving"));
+        expect(current?.querySelector(".fg")?.getAttribute("src")).toBe("/api/photo/b.jpg");
+        expect(leaving?.querySelector(".fg")?.getAttribute("src")).toBe("/api/photo/a.jpg");
         vi.useRealTimers();
     });
 
@@ -155,10 +163,10 @@ describe("DisplayPage slideshow advance", () => {
         await act(async () => { ({ container } = render(<DisplayPage />)); });
         await act(async () => { await vi.advanceTimersByTimeAsync(0); });
         await act(async () => { await vi.advanceTimersByTimeAsync(1000); });
-        const active = Array.from(container.querySelectorAll("img.slide")).find((i) =>
-            i.className.includes("active")
+        const active = Array.from(container.querySelectorAll(".slide")).find((s) =>
+            s.className.includes("active")
         );
-        expect(active?.getAttribute("src")).toBe("/api/photo/c.jpg");
+        expect(active?.querySelector(".fg")?.getAttribute("src")).toBe("/api/photo/c.jpg");
         vi.useRealTimers();
     });
 });

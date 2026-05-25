@@ -95,7 +95,7 @@ test.describe("Upload page", () => {
         await page.locator('input[type="file"]').setInputFiles(pngUpload());
         await expect(page.getByText("1 photos")).toBeVisible();
         const frame = page.frameLocator("iframe");
-        await expect(frame.locator('img[alt=""]')).toHaveCount(1);
+        await expect(frame.locator(".slide .fg")).toHaveCount(1);
     });
 
     test("rotating a photo replaces it with a new file", async ({ page }) => {
