@@ -124,6 +124,7 @@ describe("DisplayPage slideshow advance", () => {
     it("advances to the next slide on the 10s interval", async () => {
         vi.restoreAllMocks(); // drop the setInterval stub; use fake timers instead
         vi.useFakeTimers();
+        vi.setSystemTime(0); // deterministic wall-clock → slide 0 at t=0
         db.photos = ["/api/photo/a.jpg", "/api/photo/b.jpg"];
         let container!: HTMLElement;
         await act(async () => {
@@ -142,6 +143,22 @@ describe("DisplayPage slideshow advance", () => {
         const leaving = imgs.find((i) => i.className.includes("leaving"));
         expect(current?.getAttribute("src")).toBe("/api/photo/b.jpg");
         expect(leaving?.getAttribute("src")).toBe("/api/photo/a.jpg");
+        vi.useRealTimers();
+    });
+
+    it("derives the current slide from wall-clock time so all screens match", async () => {
+        vi.restoreAllMocks();
+        vi.useFakeTimers();
+        vi.setSystemTime(20000); // floor(20000/10000) % 3 = 2 -> third photo
+        db.photos = ["/api/photo/a.jpg", "/api/photo/b.jpg", "/api/photo/c.jpg"];
+        let container!: HTMLElement;
+        await act(async () => { ({ container } = render(<DisplayPage />)); });
+        await act(async () => { await vi.advanceTimersByTimeAsync(0); });
+        await act(async () => { await vi.advanceTimersByTimeAsync(1000); });
+        const active = Array.from(container.querySelectorAll("img.slide")).find((i) =>
+            i.className.includes("active")
+        );
+        expect(active?.getAttribute("src")).toBe("/api/photo/c.jpg");
         vi.useRealTimers();
     });
 });

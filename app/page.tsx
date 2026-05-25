@@ -2,6 +2,8 @@
 
 import { useEffect, useRef, useState, useCallback } from "react";
 
+const SLIDE_MS = 10000; // every screen derives its slide from wall-clock time → stays in sync
+
 /* ── Display View — Fullscreen Slideshow ────────────────────────────────────── */
 
 export default function DisplayPage() {
@@ -65,20 +67,21 @@ export default function DisplayPage() {
         return () => es.close();
     }, [refresh]);
 
-    // Advance slideshow
+    // Advance slideshow — index derived from wall-clock so every screen shows the same photo
     useEffect(() => {
         if (urls.length < 2) return;
-        const timer = setInterval(() => {
+        const tick = () => {
+            const next = Math.floor(Date.now() / SLIDE_MS) % urls.length;
             setIdx(prev => {
+                if (next === prev) return prev;
                 setPrevIdx(prev);
                 kbRef.current++;
-                const next = (prev + 1) % urls.length;
-                // Preload the one after next
-                const afterNext = (next + 1) % urls.length;
-                preload(urls[afterNext]);
+                preload(urls[(next + 1) % urls.length]); // preload the one after next
                 return next;
             });
-        }, 10000);
+        };
+        tick(); // snap to the shared position immediately on load
+        const timer = setInterval(tick, 1000);
         return () => clearInterval(timer);
     }, [urls, preload]);
 
