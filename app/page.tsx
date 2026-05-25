@@ -132,7 +132,7 @@ export default function DisplayPage() {
         <>
             <style>{`
                 .slide { position:absolute;top:0;left:0;width:100vw;height:100vh;overflow:hidden;opacity:0;will-change:transform,opacity; }
-                .slide .bg { position:absolute;inset:0;width:100%;height:100%;object-fit:cover;filter:blur(40px) brightness(0.5);transform:scale(1.18); }
+                .slide .bg { position:absolute;inset:0;width:100%;height:100%;object-fit:cover;filter:blur(45px) saturate(1.8) brightness(0.82);transform:scale(1.25); }
                 .slide .fg { position:absolute;inset:0;width:100%;height:100%;object-fit:contain; }
                 .slide.active { opacity:1;transition:opacity 1.5s ease; }
                 .slide.no-anim { opacity:1;transition:none; }

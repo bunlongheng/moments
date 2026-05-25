@@ -222,8 +222,8 @@ export default function UploadPage() {
 
                 {/* Controls */}
                 <div style={{ flex: "1 1 340px", minWidth: 0 }}>
-                    {/* Style picker */}
-                    <div style={{ display: "flex", gap: 6, flexWrap: "wrap", marginBottom: 12 }}>
+                    {/* Modes + a small Add Photos chip pushed to the top-right */}
+                    <div style={{ display: "flex", gap: 6, flexWrap: "wrap", alignItems: "center", marginBottom: 6 }}>
                         {STYLES.map(s => (
                             <button
                                 key={s.id}
@@ -243,24 +243,22 @@ export default function UploadPage() {
                                 {s.label}
                             </button>
                         ))}
+                        <button
+                            onClick={() => inputRef.current?.click()}
+                            className="add-btn"
+                            style={{
+                                marginLeft: "auto", display: "inline-flex", alignItems: "center", gap: 4,
+                                padding: "6px 14px", borderRadius: 20, fontSize: 12, fontWeight: 600, cursor: "pointer",
+                                border: "1px solid #007aff", background: "rgba(0,122,255,0.18)", color: "#4da3ff", whiteSpace: "nowrap",
+                            }}
+                        >
+                            + Add Photos
+                        </button>
+                        <input ref={inputRef} type="file" accept="image/*" multiple hidden onChange={e => { if (e.target.files) uploadFiles(e.target.files); e.target.value = ""; }} />
                     </div>
-
-                    {/* Add button — compact, drag & drop also works anywhere */}
-                    <button
-                        onClick={() => inputRef.current?.click()}
-                        className="add-btn"
-                        style={{
-                            width: "100%", padding: "9px 14px", borderRadius: 10, fontSize: 13, fontWeight: 600,
-                            border: "2px dashed rgba(255,255,255,0.2)", background: "rgba(255,255,255,0.04)",
-                            color: "#999", cursor: "pointer",
-                        }}
-                    >
-                        + Add Photos
-                    </button>
-                    <p style={{ textAlign: "center", color: "#555", fontSize: 11, margin: "6px 0 12px" }}>
+                    <p style={{ color: "#555", fontSize: 11, margin: "0 0 12px" }}>
                         or drag &amp; drop photos anywhere
                     </p>
-                    <input ref={inputRef} type="file" accept="image/*" multiple hidden onChange={e => { if (e.target.files) uploadFiles(e.target.files); e.target.value = ""; }} />
 
                     {/* Photo grid */}
                     <div style={{ display: "grid", gridTemplateColumns: "repeat(3, 1fr)", gap: 4 }}>
