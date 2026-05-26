@@ -1,4 +1,10 @@
 import { defineConfig, devices } from "@playwright/test";
+import fs from "fs";
+
+// Use pre-installed browsers in the managed cloud environment when present.
+if (fs.existsSync("/opt/pw-browsers") && !process.env.PLAYWRIGHT_BROWSERS_PATH) {
+    process.env.PLAYWRIGHT_BROWSERS_PATH = "/opt/pw-browsers";
+}
 
 const PORT = 3210;
 const BASE_URL = `http://localhost:${PORT}`;
