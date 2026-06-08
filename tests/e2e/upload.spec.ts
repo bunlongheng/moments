@@ -82,8 +82,10 @@ test.describe("Upload page", () => {
 
     test("shows and hides the drag overlay", async ({ page }) => {
         await page.goto("/upload");
-        // Wait for the component to mount so its document drag listeners are attached.
-        await expect(page.getByRole("button", { name: "+ Add Photos" })).toBeVisible();
+        // Wait for the /api/images response — effects (including the drag-listener
+        // registration) run synchronously before any network response can arrive, so
+        // this response is a reliable signal that document drag listeners are attached.
+        await page.waitForResponse("**/api/images");
         await page.evaluate(() => document.dispatchEvent(new Event("dragenter", { bubbles: true })));
         await expect(page.getByText("Drop photos here")).toBeVisible();
         await page.evaluate(() => document.dispatchEvent(new Event("dragleave", { bubbles: true })));
