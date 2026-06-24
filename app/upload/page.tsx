@@ -155,7 +155,8 @@ export default function UploadPage() {
         document.addEventListener("dragleave", onLeave);
         document.addEventListener("dragover", onOver);
         document.addEventListener("drop", onDrop);
-        return () => { document.removeEventListener("dragenter", onEnter); document.removeEventListener("dragleave", onLeave); document.removeEventListener("dragover", onOver); document.removeEventListener("drop", onDrop); };
+        document.body.dataset.dragReady = "1";
+        return () => { document.removeEventListener("dragenter", onEnter); document.removeEventListener("dragleave", onLeave); document.removeEventListener("dragover", onOver); document.removeEventListener("drop", onDrop); delete document.body.dataset.dragReady; };
     }, [uploadFiles]);
 
     // Tap/click toggles the delete button; long-press also reveals it on touch.

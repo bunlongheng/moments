@@ -82,8 +82,8 @@ test.describe("Upload page", () => {
 
     test("shows and hides the drag overlay", async ({ page }) => {
         await page.goto("/upload");
-        // Wait for the component to mount so its document drag listeners are attached.
-        await expect(page.getByRole("button", { name: "+ Add Photos" })).toBeVisible();
+        // Wait until the drag listeners are actually registered (set in useEffect after hydration).
+        await page.waitForFunction(() => document.body.dataset.dragReady === "1");
         await page.evaluate(() => document.dispatchEvent(new Event("dragenter", { bubbles: true })));
         await expect(page.getByText("Drop photos here")).toBeVisible();
         await page.evaluate(() => document.dispatchEvent(new Event("dragleave", { bubbles: true })));
