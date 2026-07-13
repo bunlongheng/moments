@@ -13,6 +13,15 @@ const eslintConfig = defineConfig([
     "build/**",
     "next-env.d.ts",
   ]),
+  {
+    // The experimental react-hooks RC rules fire on patterns that are correct
+    // for this app: fetching once on mount in a client component, and generating
+    // decorative confetti with Math.random. Keep them as advisory warnings.
+    rules: {
+      "react-hooks/set-state-in-effect": "warn",
+      "react-hooks/purity": "warn",
+    },
+  },
 ]);
 
 export default eslintConfig;
