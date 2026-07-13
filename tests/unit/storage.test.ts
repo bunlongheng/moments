@@ -83,9 +83,9 @@ describe("getMeta defaults", () => {
         expect(storage.getMeta().version).toBe(0);
     });
 
-    it("returns an object with photos, style and version keys", () => {
+    it("returns an object with photos, style, version and selected keys", () => {
         const meta = storage.getMeta();
-        expect(Object.keys(meta).sort()).toEqual(["photos", "style", "version"]);
+        expect(Object.keys(meta).sort()).toEqual(["photos", "selected", "style", "version"]);
     });
 
     it("creates the directories as a side effect", () => {
@@ -129,7 +129,7 @@ describe("getMeta with existing file", () => {
         fs.mkdirSync(dir, { recursive: true });
         fs.writeFileSync(metaFile, "{ not valid json ");
         const meta = storage.getMeta();
-        expect(meta).toEqual({ photos: [], style: "ken-burns", version: 0 });
+        expect(meta).toEqual({ photos: [], style: "ken-burns", version: 0, selected: null });
     });
 });
 

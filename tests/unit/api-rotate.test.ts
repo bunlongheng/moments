@@ -113,12 +113,13 @@ describe("POST /api/rotate", () => {
         expect(meta.photos[1]).not.toBe("b.jpg");
     });
 
-    it("returns 500 when sharp fails", async () => {
+    it("returns a 500 with a generic error when sharp fails", async () => {
         seed(["a.jpg"]);
         sharpState.shouldThrow = true;
         const res = await POST(rotateReq({ index: 0 }));
         expect(res.status).toBe(500);
-        expect((await res.json()).error).toBe("rotate boom");
+        // Internal error text must not leak to clients.
+        expect((await res.json()).error).toBe("Rotate failed");
     });
 
     it("notifies SSE subscribers after rotating", async () => {

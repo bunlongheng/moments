@@ -124,11 +124,12 @@ describe("POST /api/upload", () => {
         expect(meta.photos).toHaveLength(50);
     });
 
-    it("returns 500 with the error message when sharp fails", async () => {
+    it("returns a 500 with a generic error when sharp fails", async () => {
         sharpState.shouldThrow = true;
         const res = await POST(uploadReq(pngFile()));
         expect(res.status).toBe(500);
-        expect((await res.json()).error).toBe("sharp boom");
+        // Internal error text must not leak to clients.
+        expect((await res.json()).error).toBe("Upload failed");
     });
 
     it("generates unique filenames for separate uploads", async () => {

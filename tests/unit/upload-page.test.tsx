@@ -105,6 +105,15 @@ describe("UploadPage style picker", () => {
         await waitFor(() => expect(fade.style.fontWeight).toBe("600"));
         expect(screen.getByRole("button", { name: "Zoom" }).style.fontWeight).toBe("400");
     });
+
+    it("marks the chosen mode with the selection-feedback class", async () => {
+        const user = userEvent.setup();
+        render(<UploadPage />);
+        const slide = await screen.findByRole("button", { name: "Slide" });
+        await user.click(slide);
+        await waitFor(() => expect(slide.className).toContain("seg-active"));
+        expect(screen.getByRole("button", { name: "Zoom" }).className).not.toContain("seg-active");
+    });
 });
 
 describe("UploadPage add photos", () => {
@@ -152,6 +161,14 @@ describe("UploadPage add photos", () => {
         await screen.findByText("0 photos");
         await user.upload(fileInput(container), pngFile());
         await waitFor(() => expect(container.querySelectorAll('img[alt=""]').length).toBe(1));
+    });
+
+    it("gives grid photos an entrance-animation class", async () => {
+        db.photos = ["/api/photo/a.jpg"];
+        const { container } = render(<UploadPage />);
+        await screen.findByText("1 photos");
+        const cell = container.querySelector('img[alt=""]')!.parentElement as HTMLElement;
+        expect(cell.className).toContain("photo-in");
     });
 });
 
@@ -212,27 +229,46 @@ describe("UploadPage delete flow", () => {
         expect(await within(cell).findByText("×")).toBeInTheDocument();
     });
 
-    it("clicking the delete button removes the photo", async () => {
+    it("tapping a photo pins it and shows a Playing toast", async () => {
         const user = userEvent.setup();
+        db.photos = ["/api/photo/a.jpg"];
+        render(<UploadPage />);
+        await screen.findByText("1 photos");
+        const cell = document.querySelector('img[alt=""]')!.parentElement as HTMLElement;
+        await user.click(cell);
+        expect(await screen.findByText("Playing this photo")).toBeInTheDocument();
+    });
+
+    it("long-press marks the held photo cell with a feedback ring", async () => {
         db.photos = ["/api/photo/a.jpg"];
         const { container } = render(<UploadPage />);
         await screen.findByText("1 photos");
         const cell = container.querySelector('img[alt=""]')!.parentElement as HTMLElement;
-        await user.click(cell);
-        await user.click(await within(cell).findByText("×"));
+        expect(cell.className).not.toContain("held");
+        fireEvent.touchStart(cell);
+        await waitFor(() => expect(cell.className).toContain("held"));
+    });
+
+    it("clicking the delete button removes the photo", async () => {
+        db.photos = ["/api/photo/a.jpg"];
+        const { container } = render(<UploadPage />);
+        await screen.findByText("1 photos");
+        const cell = container.querySelector('img[alt=""]')!.parentElement as HTMLElement;
+        fireEvent.mouseEnter(cell); // reveal the hover controls
+        fireEvent.click(await within(cell).findByText("×"));
         expect(await screen.findByText("0 photos")).toBeInTheDocument();
     });
 
-    it("clicking the same photo again hides the delete button", async () => {
+    it("tapping a pinned photo again resumes auto-play", async () => {
         const user = userEvent.setup();
         db.photos = ["/api/photo/a.jpg"];
-        const { container } = render(<UploadPage />);
+        render(<UploadPage />);
         await screen.findByText("1 photos");
-        const cell = container.querySelector('img[alt=""]')!.parentElement as HTMLElement;
+        const cell = document.querySelector('img[alt=""]')!.parentElement as HTMLElement;
         await user.click(cell);
-        await within(cell).findByText("×");
+        expect(await screen.findByText("Playing this photo")).toBeInTheDocument();
         await user.click(cell);
-        await waitFor(() => expect(within(cell).queryByText("×")).toBeNull());
+        expect(await screen.findByText("Resumed auto-play")).toBeInTheDocument();
     });
 
     it("clicking a different photo moves the delete button to it", async () => {
@@ -262,18 +298,18 @@ describe("UploadPage delete flow", () => {
         expect(await screen.findByText("1 photos")).toBeInTheDocument();
     });
 
-    it("clears a pending delete when another photo is tapped", async () => {
+    it("tapping a different photo moves the playing ring", async () => {
         const user = userEvent.setup();
         db.photos = ["/api/photo/a.jpg", "/api/photo/b.jpg"];
         const { container } = render(<UploadPage />);
         await screen.findByText("2 photos");
 
         const cells = Array.from(container.querySelectorAll('img[alt=""]')).map((i) => i.parentElement as HTMLElement);
-        fireEvent.touchStart(cells[0]);
-        await within(cells[0]).findByText("×");
-
+        await user.click(cells[0]);
+        await waitFor(() => expect(cells[0].className).toContain("playing"));
         await user.click(cells[1]);
-        await waitFor(() => expect(within(cells[0]).queryByText("×")).toBeNull());
+        await waitFor(() => expect(cells[1].className).toContain("playing"));
+        expect(cells[0].className).not.toContain("playing");
     });
 
     it("cancels the pending long-press on touch end", async () => {
@@ -301,25 +337,23 @@ describe("UploadPage rotate", () => {
     });
 
     it("clicking rotate replaces the photo via the rotate API", async () => {
-        const user = userEvent.setup();
         db.photos = ["/api/photo/a.jpg"];
         const { container } = render(<UploadPage />);
         await screen.findByText("1 photos");
         const before = container.querySelector('img[alt=""]')!.getAttribute("src");
         const cell = container.querySelector('img[alt=""]')!.parentElement as HTMLElement;
-        await user.click(cell);
-        await user.click(await within(cell).findByRole("button", { name: "Rotate" }));
+        fireEvent.mouseEnter(cell); // reveal the hover controls
+        fireEvent.click(await within(cell).findByRole("button", { name: "Rotate" }));
         await waitFor(() => expect(container.querySelector('img[alt=""]')!.getAttribute("src")).not.toBe(before));
     });
 
     it("shows a rotated confirmation toast", async () => {
-        const user = userEvent.setup();
         db.photos = ["/api/photo/a.jpg"];
         const { container } = render(<UploadPage />);
         await screen.findByText("1 photos");
         const cell = container.querySelector('img[alt=""]')!.parentElement as HTMLElement;
-        await user.click(cell);
-        await user.click(await within(cell).findByRole("button", { name: "Rotate" }));
+        fireEvent.mouseEnter(cell); // reveal the hover controls
+        fireEvent.click(await within(cell).findByRole("button", { name: "Rotate" }));
         expect(await screen.findByText("Rotated")).toBeInTheDocument();
     });
 });
