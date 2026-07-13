@@ -2,6 +2,12 @@
   "name": "moments",
   "version": "0.1.0",
   "private": true,
+  "description": "A self-hosted digital photo frame - upload from your phone, show a synced fullscreen slideshow on any screen.",
+  "license": "MIT",
+  "author": "Bunlong Heng",
+  "homepage": "https://github.com/bunlongheng/moments#readme",
+  "repository": { "type": "git", "url": "https://github.com/bunlongheng/moments.git" },
+  "keywords": ["photo-frame", "slideshow", "nextjs", "self-hosted", "raspberry-pi", "digital-frame", "sharp"],
   "scripts": {
     "dev": "next dev",
     "build": "next build",
@@ -14,7 +20,7 @@
     "test:all": "vitest run && playwright test"
   },
   "dependencies": {
-    "next": "16.2.4",
+    "next": "^16.2.6",
     "qrcode": "^1.5.4",
     "react": "19.2.4",
     "react-dom": "19.2.4",
@@ -34,11 +40,14 @@
     "@vitejs/plugin-react": "^6.0.2",
     "@vitest/coverage-v8": "^4.1.7",
     "eslint": "^9",
-    "eslint-config-next": "16.2.4",
+    "eslint-config-next": "^16.2.6",
     "jsdom": "^29.1.1",
     "msw": "^2.14.6",
     "tailwindcss": "^4",
     "typescript": "^5",
     "vitest": "^4.1.7"
+  },
+  "overrides": {
+    "postcss": "8.5.15"
   }
 }

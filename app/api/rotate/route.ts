@@ -1,47 +1,38 @@
 import { NextResponse } from "next/server";
-import { getMeta, saveMeta, getPhotosDir, photoPath } from "@/lib/storage";
+import { updateMeta, photoPath } from "@/lib/storage";
+import { processImage } from "@/lib/images";
 import { publish } from "@/lib/events";
-import sharp from "sharp";
-import path from "path";
-import crypto from "crypto";
 import fs from "fs";
-
-const MAX_DIMENSION = 1920;
-const JPEG_QUALITY = 85;
 
 export async function POST(req: Request) {
     try {
         const { index } = await req.json();
-        const meta = getMeta();
-        if (typeof index !== "number" || index < 0 || index >= meta.photos.length) {
+        if (typeof index !== "number") {
             return NextResponse.json({ error: "Invalid index" }, { status: 400 });
         }
 
-        const oldName = meta.photos[index];
-        const oldPath = photoPath(oldName);
-        if (!fs.existsSync(oldPath)) {
-            return NextResponse.json({ error: "File not found" }, { status: 404 });
+        // Whole read-rotate-swap runs under the lock so the index can't drift.
+        const result = await updateMeta(async (meta) => {
+            if (index < 0 || index >= meta.photos.length) return { error: "Invalid index", status: 400 };
+            const oldPath = photoPath(meta.photos[index]);
+            if (!fs.existsSync(oldPath)) return { error: "File not found", status: 404 };
+
+            // Rotate 90° clockwise and re-encode to a new filename so caches refresh.
+            const newName = await processImage(fs.readFileSync(oldPath), 90);
+            fs.unlinkSync(oldPath);
+            meta.photos[index] = newName;
+            meta.version++;
+            return { filename: newName };
+        });
+
+        if ("error" in result) {
+            return NextResponse.json({ error: result.error }, { status: result.status });
         }
-
-        const buffer = fs.readFileSync(oldPath);
-        const id = crypto.randomBytes(4).toString("hex");
-        const newName = `${Date.now()}_${id}.jpg`;
-
-        // Rotate 90° clockwise and re-encode to a new filename so caches refresh.
-        await sharp(buffer)
-            .rotate(90)
-            .resize(MAX_DIMENSION, MAX_DIMENSION, { fit: "inside", withoutEnlargement: true })
-            .jpeg({ quality: JPEG_QUALITY, progressive: true })
-            .toFile(path.join(getPhotosDir(), newName));
-
-        fs.unlinkSync(oldPath);
-        meta.photos[index] = newName;
-        meta.version++;
-        saveMeta(meta);
         publish();
-
-        return NextResponse.json({ ok: true, filename: newName });
-    } catch (e: any) {
-        return NextResponse.json({ error: e.message }, { status: 500 });
+        return NextResponse.json({ ok: true, filename: result.filename });
+    } catch (e) {
+        const message = e instanceof Error ? e.message : "Rotate failed";
+        console.error("rotate failed:", message);
+        return NextResponse.json({ error: "Rotate failed" }, { status: 500 });
     }
 }

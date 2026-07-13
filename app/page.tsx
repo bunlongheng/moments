@@ -11,8 +11,11 @@ export default function DisplayPage() {
     const [style, setStyle] = useState("ken-burns");
     const [idx, setIdx] = useState(0);
     const [prevIdx, setPrevIdx] = useState(-1);
-    const kbRef = useRef(0);
+    const [selected, setSelected] = useState<number | null>(null);
     const preloadedRef = useRef<Set<string>>(new Set());
+    const prevCountRef = useRef(0);
+    const initRef = useRef(false);
+    const holdRef = useRef(0); // wall-clock ms until which to linger on the just-added photo
 
     // Preload an image into browser cache
     const preload = useCallback((url: string) => {
@@ -25,18 +28,27 @@ export default function DisplayPage() {
     // Fetch images + style
     const refresh = useCallback(async () => {
         try {
-            const [imgRes, styleRes] = await Promise.all([
+            const [imgRes, styleRes, selRes] = await Promise.all([
                 fetch("/api/images"),
                 fetch("/api/style"),
+                fetch("/api/select"),
             ]);
             if (imgRes.ok) {
                 const data = await imgRes.json();
+                // A new photo just landed (count grew) → jump to it and hold for one slide
+                if (initRef.current && data.length > prevCountRef.current) holdRef.current = Date.now() + SLIDE_MS;
+                prevCountRef.current = data.length;
+                initRef.current = true;
                 setUrls(data);
                 data.forEach(preload); // preload all
             }
             if (styleRes.ok) {
                 const data = await styleRes.json();
                 setStyle(data.style);
+            }
+            if (selRes.ok) {
+                const data = await selRes.json();
+                setSelected(data.selected);
             }
         } catch {}
     }, [preload]);
@@ -67,23 +79,37 @@ export default function DisplayPage() {
         return () => es.close();
     }, [refresh]);
 
-    // Advance slideshow — index derived from wall-clock so every screen shows the same photo
+    // Advance slideshow — index derived from wall-clock so every screen shows the same photo.
+    // When a photo is pinned (selected != null), hold on it and pause auto-advance.
     useEffect(() => {
+        if (urls.length === 0) return;
+        const jumpTo = (target: number) => {
+            setIdx(prev => {
+                if (target === prev) return prev;
+                setPrevIdx(prev);
+                return target;
+            });
+        };
+        if (selected != null) {
+            jumpTo(Math.min(selected, urls.length - 1));
+            return;
+        }
         if (urls.length < 2) return;
         const tick = () => {
+            // Just after an upload, linger on the newest (index 0) before resuming the cycle
+            if (Date.now() < holdRef.current) {
+                preload(urls[1 % urls.length]);
+                jumpTo(0);
+                return;
+            }
             const next = Math.floor(Date.now() / SLIDE_MS) % urls.length;
-            setIdx(prev => {
-                if (next === prev) return prev;
-                setPrevIdx(prev);
-                kbRef.current++;
-                preload(urls[(next + 1) % urls.length]); // preload the one after next
-                return next;
-            });
+            preload(urls[(next + 1) % urls.length]); // preload the one after next
+            jumpTo(next);
         };
         tick(); // snap to the shared position immediately on load
         const timer = setInterval(tick, 1000);
         return () => clearInterval(timer);
-    }, [urls, preload]);
+    }, [urls, selected, preload]);
 
     // LAN QR (scan to open the upload page from a phone)
     const [lan, setLan] = useState<{ url: string; qr: string } | null>(null);
@@ -115,7 +141,7 @@ export default function DisplayPage() {
         );
     }
 
-    const kbClass = `kb-${kbRef.current % 4}`;
+    const kbClass = `kb-${idx % 4}`; // cycle the four Ken Burns variants by slide index
     const getTransitionClass = (isActive: boolean, isLeaving: boolean) => {
         if (isLeaving) return "leaving";
         if (!isActive) return "";
@@ -149,6 +175,9 @@ export default function DisplayPage() {
                 @keyframes slideIn { 0%{transform:translateX(100%);opacity:0} 100%{transform:translateX(0);opacity:1} }
                 .zoom-in { animation:zoomIn 1.5s ease-out forwards; }
                 @keyframes zoomIn { 0%{transform:scale(0.6);opacity:0} 100%{transform:scale(1);opacity:1} }
+                /* Selected/pinned slide: breathing white frame so viewers see it's being featured */
+                .sel-frame { position:fixed; inset:0; pointer-events:none; z-index:5; border:0.35vw solid rgba(255,255,255,0.9); animation:selPulse 1.8s ease-in-out infinite; }
+                @keyframes selPulse { 0%,100%{ opacity:0.5; box-shadow:inset 0 0 22px rgba(255,255,255,0.16); } 50%{ opacity:1; box-shadow:inset 0 0 50px rgba(255,255,255,0.4); } }
             `}</style>
             <div style={{ width: "100vw", height: "100vh", overflow: "hidden", position: "relative", background: "#000" }}>
                 {/* Each slide: blurred cover backdrop + full (contain) photo, so portraits fit by height */}
@@ -162,6 +191,9 @@ export default function DisplayPage() {
                     <img src={urls[idx]} alt="" className="bg" />
                     <img src={urls[idx]} alt="" className="fg" />
                 </div>
+
+                {/* Animated white frame while a photo is pinned/selected */}
+                {selected != null && <div className="sel-frame" aria-hidden />}
 
                 {/* Clock (viewport-relative so the preview scales faithfully) */}
                 <div style={{ position: "fixed", bottom: "1.8vh", left: "1.6vw", color: "rgba(255,255,255,0.5)", fontSize: "2.6vw", fontWeight: 200, fontFamily: "-apple-system, sans-serif", zIndex: 10 }}>

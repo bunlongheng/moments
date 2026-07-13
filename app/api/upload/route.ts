@@ -1,13 +1,9 @@
 import { NextResponse } from "next/server";
-import { getMeta, saveMeta, getPhotosDir } from "@/lib/storage";
+import { getMeta, updateMeta } from "@/lib/storage";
+import { processImage, MAX_UPLOAD_BYTES } from "@/lib/images";
 import { publish } from "@/lib/events";
-import sharp from "sharp";
-import path from "path";
-import crypto from "crypto";
 
 const MAX_IMAGES = 50;
-const MAX_DIMENSION = 1920;
-const JPEG_QUALITY = 85;
 
 export async function POST(req: Request) {
     try {
@@ -15,29 +11,30 @@ export async function POST(req: Request) {
         const file = formData.get("file") as File | null;
         if (!file) return NextResponse.json({ error: "No file" }, { status: 400 });
 
-        const meta = getMeta();
-        if (meta.photos.length >= MAX_IMAGES) {
+        // Reject oversize files before buffering the body into memory.
+        if (file.size > MAX_UPLOAD_BYTES) {
+            return NextResponse.json({ error: "File too large" }, { status: 413 });
+        }
+        if (getMeta().photos.length >= MAX_IMAGES) {
             return NextResponse.json({ error: "Max images reached" }, { status: 400 });
         }
 
         const buffer = Buffer.from(await file.arrayBuffer());
-        const id = crypto.randomBytes(4).toString("hex");
-        const filename = `${Date.now()}_${id}.jpg`;
+        const filename = await processImage(buffer);
 
-        // Sharp: auto-rotate EXIF + resize + compress — single pipeline, native C++
-        await sharp(buffer)
-            .rotate()                           // auto EXIF rotate
-            .resize(MAX_DIMENSION, MAX_DIMENSION, { fit: "inside", withoutEnlargement: true })
-            .jpeg({ quality: JPEG_QUALITY, progressive: true })
-            .toFile(path.join(getPhotosDir(), filename));
-
-        meta.photos.push(filename);
-        meta.version++;
-        saveMeta(meta);
+        // Commit the manifest change under the serialized lock.
+        const count = await updateMeta((meta) => {
+            meta.photos.unshift(filename);                 // newest first — shows on top
+            if (meta.selected != null) meta.selected++;    // keep any pin on the same photo after the shift
+            meta.version++;
+            return meta.photos.length;
+        });
         publish();
 
-        return NextResponse.json({ ok: true, count: meta.photos.length, filename });
-    } catch (e: any) {
-        return NextResponse.json({ error: e.message }, { status: 500 });
+        return NextResponse.json({ ok: true, count, filename });
+    } catch (e) {
+        const message = e instanceof Error ? e.message : "Upload failed";
+        console.error("upload failed:", message);
+        return NextResponse.json({ error: "Upload failed" }, { status: 500 });
     }
 }

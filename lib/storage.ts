@@ -1,5 +1,6 @@
 import fs from "fs";
 import path from "path";
+import crypto from "crypto";
 
 const DATA_DIR = process.env.MOMENTS_DATA_DIR
     ? path.resolve(process.env.MOMENTS_DATA_DIR)
@@ -11,6 +12,7 @@ export type Meta = {
     photos: string[];       // filenames in order
     style: string;          // slideshow style
     version: number;        // bumped on every change
+    selected?: number | null; // pinned photo index, or null/absent for auto-advance
 };
 
 function ensureDirs() {
@@ -28,17 +30,39 @@ export function getMeta(): Meta {
             data.photos = (data.photos || []).filter((f: string) =>
                 fs.existsSync(path.join(PHOTOS_DIR, f))
             );
-            return { style: "ken-burns", version: 0, ...data };
+            return { style: "ken-burns", version: 0, selected: null, ...data };
         } catch {
-            return { photos: [], style: "ken-burns", version: 0 };
+            return { photos: [], style: "ken-burns", version: 0, selected: null };
         }
     }
-    return { photos: [], style: "ken-burns", version: 0 };
+    return { photos: [], style: "ken-burns", version: 0, selected: null };
 }
 
 export function saveMeta(meta: Meta) {
     ensureDirs();
-    fs.writeFileSync(META_FILE, JSON.stringify(meta));
+    // Atomic write: write to a temp file then rename, so a crash mid-write
+    // can never leave a truncated meta.json.
+    const tmp = `${META_FILE}.${crypto.randomBytes(4).toString("hex")}.tmp`;
+    fs.writeFileSync(tmp, JSON.stringify(meta));
+    fs.renameSync(tmp, META_FILE);
+}
+
+// Serialize all read-modify-write cycles through one in-process queue so
+// concurrent requests can't clobber each other's meta.json updates.
+let queue: Promise<unknown> = Promise.resolve();
+
+export function updateMeta<T>(fn: (meta: Meta) => T | Promise<T>): Promise<T> {
+    const run = queue.then(async () => {
+        const meta = getMeta();
+        const result = await fn(meta);
+        saveMeta(meta);
+        return result;
+    });
+    queue = run.then(
+        () => undefined,
+        () => undefined,
+    );
+    return run;
 }
 
 export function getPhotosDir() {
