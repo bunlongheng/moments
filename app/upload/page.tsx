@@ -1,6 +1,9 @@
 "use client";
 
-import { useEffect, useState, useRef, useCallback, useMemo } from "react";
+import { useEffect, useLayoutEffect, useState, useRef, useCallback, useMemo } from "react";
+
+// useLayoutEffect on client (fires before paint), useEffect on server (SSR no-op)
+const useIsomorphicLayoutEffect = typeof window !== "undefined" ? useLayoutEffect : useEffect;
 
 const SLIDE_MS = 10000; // mirror the display's wall-clock cadence to know what's on screen
 
@@ -243,10 +246,11 @@ export default function UploadPage() {
         showToast(`Style: ${STYLES.find(x => x.id === s)?.label}`);
     }, []);
 
-    // Drag & drop
+    // Drag & drop — useIsomorphicLayoutEffect attaches listeners before the browser paints,
+    // so they're ready the instant the page becomes interactive after hydration.
     const [dragging, setDragging] = useState(false);
     const dragCounter = useRef(0);
-    useEffect(() => {
+    useIsomorphicLayoutEffect(() => {
         const onEnter = (e: DragEvent) => { e.preventDefault(); dragCounter.current++; setDragging(true); };
         const onLeave = (e: DragEvent) => { e.preventDefault(); dragCounter.current--; if (dragCounter.current <= 0) { dragCounter.current = 0; setDragging(false); } };
         const onOver = (e: DragEvent) => e.preventDefault();
