@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState, useRef, useCallback, useMemo } from "react";
+import { useEffect, useLayoutEffect, useState, useRef, useCallback, useMemo } from "react";
 
 const SLIDE_MS = 10000; // mirror the display's wall-clock cadence to know what's on screen
 
@@ -246,7 +246,7 @@ export default function UploadPage() {
     // Drag & drop
     const [dragging, setDragging] = useState(false);
     const dragCounter = useRef(0);
-    useEffect(() => {
+    useLayoutEffect(() => {
         const onEnter = (e: DragEvent) => { e.preventDefault(); dragCounter.current++; setDragging(true); };
         const onLeave = (e: DragEvent) => { e.preventDefault(); dragCounter.current--; if (dragCounter.current <= 0) { dragCounter.current = 0; setDragging(false); } };
         const onOver = (e: DragEvent) => e.preventDefault();
