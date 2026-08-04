@@ -109,10 +109,18 @@ export default function UploadPage() {
     const prevCountRef = useRef(0);
     const initRef = useRef(false);
     const holdRef = useRef(0); // mirror the display: linger the "Playing" badge on the newest after an upload
+    const toastTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
+
+    useEffect(() => {
+        return () => {
+            if (toastTimer.current) clearTimeout(toastTimer.current);
+        };
+    }, []);
 
     const showToast = (msg: string) => {
         setToast(msg);
-        setTimeout(() => setToast(""), 2000);
+        if (toastTimer.current) clearTimeout(toastTimer.current);
+        toastTimer.current = setTimeout(() => setToast(""), 2000);
     };
 
     const loadPhotos = useCallback(async () => {
