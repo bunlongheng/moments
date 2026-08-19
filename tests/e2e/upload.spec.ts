@@ -88,8 +88,9 @@ test.describe("Upload page", () => {
         // over-increment the drag counter and leave the overlay visible after one dragleave.
         await page.waitForFunction(() => {
             if (document.body.textContent?.includes("Drop photos here")) return true;
-            if (!(window as any).__dragEnterFired) {
-                (window as any).__dragEnterFired = true;
+            const w = window as Window & { __dragEnterFired?: boolean };
+            if (!w.__dragEnterFired) {
+                w.__dragEnterFired = true;
                 document.dispatchEvent(new Event("dragenter", { bubbles: true }));
             }
             return false;
