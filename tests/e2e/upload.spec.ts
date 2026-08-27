@@ -89,9 +89,10 @@ test.describe("Upload page", () => {
         // and leave a single dragleave unable to dismiss the overlay on slow CI runners).
         await page.waitForFunction(() => {
             if (document.body.textContent?.includes("Drop photos here")) return true;
-            if ((window as any).__dragEnterDispatched) return false;
+            const w = window as Window & { __dragEnterDispatched?: boolean };
+            if (w.__dragEnterDispatched) return false;
             document.dispatchEvent(new Event("dragenter", { bubbles: true }));
-            (window as any).__dragEnterDispatched = true;
+            w.__dragEnterDispatched = true;
             return false;
         });
         await expect(page.getByText("Drop photos here")).toBeVisible();
