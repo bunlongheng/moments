@@ -92,7 +92,14 @@ test.describe("Upload page", () => {
             return false;
         });
         await expect(page.getByText("Drop photos here")).toBeVisible();
-        await page.evaluate(() => document.dispatchEvent(new Event("dragleave", { bubbles: true })));
+        // Mirror the dragenter approach: check first, dispatch only while visible.
+        // The drag counter may be > 1 if the polling loop fired before React re-rendered,
+        // so we keep sending dragleave until the overlay actually disappears.
+        await page.waitForFunction(() => {
+            if (!document.body.textContent?.includes("Drop photos here")) return true;
+            document.dispatchEvent(new Event("dragleave", { bubbles: true }));
+            return false;
+        });
         await expect(page.getByText("Drop photos here")).toBeHidden();
     });
 
