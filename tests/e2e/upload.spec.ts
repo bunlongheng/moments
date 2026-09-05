@@ -87,8 +87,8 @@ test.describe("Upload page", () => {
         // Sending multiple dragenter events over-increments the drag counter so that
         // a single dragleave cannot hide the overlay.
         await page.waitForFunction(() => {
-            if (!(window as Record<string, unknown>).__testDragEnterSent) {
-                (window as Record<string, unknown>).__testDragEnterSent = true;
+            if (!(window as unknown as Record<string, unknown>).__testDragEnterSent) {
+                (window as unknown as Record<string, unknown>).__testDragEnterSent = true;
                 document.dispatchEvent(new Event("dragenter", { bubbles: true }));
             }
             return document.body.textContent?.includes("Drop photos here") || false;
