@@ -83,12 +83,15 @@ test.describe("Upload page", () => {
     test("shows and hides the drag overlay", async ({ page }) => {
         await page.goto("/upload");
         await expect(page.getByRole("button", { name: "+ Add Photos" })).toBeVisible();
-        // useEffect attaches drag listeners asynchronously after render; retry the dispatch
-        // until the overlay appears. Check first so we never dispatch a second time once
-        // the overlay is already visible (which would over-increment the drag counter).
+        // Dispatch dragenter exactly once regardless of how many times the polling
+        // function runs — multiple dispatches would over-increment the drag counter
+        // and a single dragleave would never reach zero.
         await page.waitForFunction(() => {
             if (document.body.textContent?.includes("Drop photos here")) return true;
-            document.dispatchEvent(new Event("dragenter", { bubbles: true }));
+            if (!(window as { __dragDispatched?: boolean }).__dragDispatched) {
+                document.dispatchEvent(new Event("dragenter", { bubbles: true }));
+                (window as { __dragDispatched?: boolean }).__dragDispatched = true;
+            }
             return false;
         });
         await expect(page.getByText("Drop photos here")).toBeVisible();
