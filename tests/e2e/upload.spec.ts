@@ -84,15 +84,26 @@ test.describe("Upload page", () => {
         await page.goto("/upload");
         await expect(page.getByRole("button", { name: "+ Add Photos" })).toBeVisible();
         // useEffect attaches drag listeners asynchronously after render; retry the dispatch
-        // until the overlay appears. Check first so we never dispatch a second time once
-        // the overlay is already visible (which would over-increment the drag counter).
-        await page.waitForFunction(() => {
-            if (document.body.textContent?.includes("Drop photos here")) return true;
-            document.dispatchEvent(new Event("dragenter", { bubbles: true }));
-            return false;
-        });
+        // until the overlay appears. The poll loop may fire multiple dragenter events before
+        // React re-renders (React state update is async), which over-increments the internal
+        // dragCounter ref. Count every effective dispatch so we can send an equal number of
+        // dragleave events to bring the counter back to 0.
+        const sentCount: number = await page.evaluate(() => new Promise<number>((resolve) => {
+            let count = 0;
+            const tryFire = () => {
+                if (document.body.textContent?.includes("Drop photos here")) { resolve(count); return; }
+                document.dispatchEvent(new Event("dragenter", { bubbles: true }));
+                count++;
+                requestAnimationFrame(tryFire);
+            };
+            tryFire();
+        }));
         await expect(page.getByText("Drop photos here")).toBeVisible();
-        await page.evaluate(() => document.dispatchEvent(new Event("dragleave", { bubbles: true })));
+        // Balance the drag counter exactly; dispatch all drayleaves in one synchronous block
+        // so React batches the state updates into a single re-render.
+        await page.evaluate((n) => {
+            for (let i = 0; i < n; i++) document.dispatchEvent(new Event("dragleave", { bubbles: true }));
+        }, sentCount);
         await expect(page.getByText("Drop photos here")).toBeHidden();
     });
 
