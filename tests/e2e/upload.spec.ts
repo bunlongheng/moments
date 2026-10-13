@@ -83,14 +83,21 @@ test.describe("Upload page", () => {
     test("shows and hides the drag overlay", async ({ page }) => {
         await page.goto("/upload");
         await expect(page.getByRole("button", { name: "+ Add Photos" })).toBeVisible();
-        // useEffect attaches drag listeners asynchronously after render; retry the dispatch
-        // until the overlay appears. Check first so we never dispatch a second time once
-        // the overlay is already visible (which would over-increment the drag counter).
-        await page.waitForFunction(() => {
-            if (document.body.textContent?.includes("Drop photos here")) return true;
-            document.dispatchEvent(new Event("dragenter", { bubbles: true }));
-            return false;
-        });
+        // The drag listeners attach via useIsomorphicLayoutEffect, but on a warm server
+        // the SSR button can appear before hydration finishes. Dispatch dragenter, yield
+        // 50 ms for React to commit the state update, then check: if the overlay is not
+        // yet visible the listener was not ready and we try again. The 50 ms yield ensures
+        // the counter is incremented at most once per attempt, so one dragleave always hides.
+        await page.evaluate(() =>
+            new Promise<void>(resolve => {
+                const attempt = () => {
+                    if (document.body.textContent?.includes("Drop photos here")) { resolve(); return; }
+                    document.dispatchEvent(new Event("dragenter", { bubbles: true }));
+                    setTimeout(attempt, 50);
+                };
+                attempt();
+            })
+        );
         await expect(page.getByText("Drop photos here")).toBeVisible();
         await page.evaluate(() => document.dispatchEvent(new Event("dragleave", { bubbles: true })));
         await expect(page.getByText("Drop photos here")).toBeHidden();
