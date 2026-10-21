@@ -90,10 +90,14 @@ test.describe("Upload page", () => {
         await page.waitForFunction(() => {
             if (document.body.textContent?.includes("Drop photos here")) return true;
             document.dispatchEvent(new Event("dragenter", { bubbles: true }));
-            (window as any).__testDragEnters = ((window as any).__testDragEnters ?? 0) + 1;
+            const w = window as Window & { __testDragEnters?: number };
+            w.__testDragEnters = (w.__testDragEnters ?? 0) + 1;
             return false;
         });
-        const enters: number = await page.evaluate(() => (window as any).__testDragEnters ?? 1);
+        const enters: number = await page.evaluate(() => {
+            const w = window as Window & { __testDragEnters?: number };
+            return w.__testDragEnters ?? 1;
+        });
         await expect(page.getByText("Drop photos here")).toBeVisible();
         for (let i = 0; i < enters; i++) {
             await page.evaluate(() => document.dispatchEvent(new Event("dragleave", { bubbles: true })));
