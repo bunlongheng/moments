@@ -267,7 +267,8 @@ export default function UploadPage() {
         document.addEventListener("dragleave", onLeave);
         document.addEventListener("dragover", onOver);
         document.addEventListener("drop", onDrop);
-        return () => { document.removeEventListener("dragenter", onEnter); document.removeEventListener("dragleave", onLeave); document.removeEventListener("dragover", onOver); document.removeEventListener("drop", onDrop); };
+        document.body.dataset.dragReady = "1";
+        return () => { delete document.body.dataset.dragReady; document.removeEventListener("dragenter", onEnter); document.removeEventListener("dragleave", onLeave); document.removeEventListener("dragover", onOver); document.removeEventListener("drop", onDrop); };
     }, [uploadFiles]);
 
     // Tap plays the photo; long-press (touch) reveals the delete/rotate controls.
