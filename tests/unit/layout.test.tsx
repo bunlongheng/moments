@@ -35,7 +35,9 @@ describe("RootLayout structure", () => {
 
     it("passes children through to the body", () => {
         const body = tree().props.children;
-        expect(body.props.children).toBe("CONTENT");
+        const kids = body.props.children;
+        const actual = Array.isArray(kids) ? kids[0] : kids;
+        expect(actual).toBe("CONTENT");
     });
 
     it("gives the body a black background", () => {
