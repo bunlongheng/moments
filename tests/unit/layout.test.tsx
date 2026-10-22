@@ -35,7 +35,16 @@ describe("RootLayout structure", () => {
 
     it("passes children through to the body", () => {
         const body = tree().props.children;
-        expect(body.props.children).toBe("CONTENT");
+        // body now renders [children, <SwRegister />] since the PWA service-worker
+        // registration component was added alongside the children in layout.tsx
+        const [content] = body.props.children as [unknown, unknown];
+        expect(content).toBe("CONTENT");
+    });
+
+    it("renders SwRegister alongside children for PWA service-worker registration", () => {
+        const body = tree().props.children;
+        const [, swRegister] = body.props.children as [unknown, ReactElement];
+        expect(swRegister.type).toBeDefined();
     });
 
     it("gives the body a black background", () => {
