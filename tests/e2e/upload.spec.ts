@@ -92,7 +92,12 @@ test.describe("Upload page", () => {
             return false;
         });
         await expect(page.getByText("Drop photos here")).toBeVisible();
-        await page.evaluate(() => document.dispatchEvent(new Event("dragleave", { bubbles: true })));
+        // The retry loop above may have dispatched dragenter more than once before React
+        // re-rendered; mirror it symmetrically so the counter reliably reaches zero.
+        await page.waitForFunction(() => {
+            document.dispatchEvent(new Event("dragleave", { bubbles: true }));
+            return !document.body.textContent?.includes("Drop photos here");
+        });
         await expect(page.getByText("Drop photos here")).toBeHidden();
     });
 
