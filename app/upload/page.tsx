@@ -260,7 +260,7 @@ export default function UploadPage() {
     const dragCounter = useRef(0);
     useIsomorphicLayoutEffect(() => {
         const onEnter = (e: DragEvent) => { e.preventDefault(); dragCounter.current++; setDragging(true); };
-        const onLeave = (e: DragEvent) => { e.preventDefault(); dragCounter.current--; if (dragCounter.current <= 0) { dragCounter.current = 0; setDragging(false); } };
+        const onLeave = (e: DragEvent) => { e.preventDefault(); if (!e.relatedTarget) { dragCounter.current = 0; setDragging(false); return; } dragCounter.current--; if (dragCounter.current <= 0) { dragCounter.current = 0; setDragging(false); } };
         const onOver = (e: DragEvent) => e.preventDefault();
         const onDrop = (e: DragEvent) => { e.preventDefault(); dragCounter.current = 0; setDragging(false); if (e.dataTransfer?.files.length) uploadFiles(e.dataTransfer.files); };
         document.addEventListener("dragenter", onEnter);
