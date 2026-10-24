@@ -257,12 +257,12 @@ export default function UploadPage() {
     // Drag & drop — useIsomorphicLayoutEffect attaches listeners before the browser paints,
     // so they're ready the instant the page becomes interactive after hydration.
     const [dragging, setDragging] = useState(false);
-    const dragCounter = useRef(0);
+    const dragTargets = useRef(new Set<EventTarget>());
     useIsomorphicLayoutEffect(() => {
-        const onEnter = (e: DragEvent) => { e.preventDefault(); dragCounter.current++; setDragging(true); };
-        const onLeave = (e: DragEvent) => { e.preventDefault(); dragCounter.current--; if (dragCounter.current <= 0) { dragCounter.current = 0; setDragging(false); } };
+        const onEnter = (e: DragEvent) => { e.preventDefault(); if (e.target) dragTargets.current.add(e.target); setDragging(true); };
+        const onLeave = (e: DragEvent) => { e.preventDefault(); if (e.target) dragTargets.current.delete(e.target); if (dragTargets.current.size === 0) setDragging(false); };
         const onOver = (e: DragEvent) => e.preventDefault();
-        const onDrop = (e: DragEvent) => { e.preventDefault(); dragCounter.current = 0; setDragging(false); if (e.dataTransfer?.files.length) uploadFiles(e.dataTransfer.files); };
+        const onDrop = (e: DragEvent) => { e.preventDefault(); dragTargets.current.clear(); setDragging(false); if (e.dataTransfer?.files.length) uploadFiles(e.dataTransfer.files); };
         document.addEventListener("dragenter", onEnter);
         document.addEventListener("dragleave", onLeave);
         document.addEventListener("dragover", onOver);
