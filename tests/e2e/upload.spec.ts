@@ -92,7 +92,13 @@ test.describe("Upload page", () => {
             return false;
         });
         await expect(page.getByText("Drop photos here")).toBeVisible();
-        await page.evaluate(() => document.dispatchEvent(new Event("dragleave", { bubbles: true })));
+        // Mirror the dragenter loop: dispatch dragleave until the overlay disappears.
+        // The app clamps dragCounter at 0, so extra dragleave events are safe no-ops.
+        await page.waitForFunction(() => {
+            if (!document.body.textContent?.includes("Drop photos here")) return true;
+            document.dispatchEvent(new Event("dragleave", { bubbles: true }));
+            return false;
+        });
         await expect(page.getByText("Drop photos here")).toBeHidden();
     });
 
