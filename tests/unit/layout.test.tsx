@@ -2,6 +2,7 @@
 import { describe, it, expect } from "vitest";
 import type { ReactElement } from "react";
 import RootLayout, { metadata } from "@/app/layout";
+import SwRegister from "@/app/sw-register";
 
 describe("RootLayout metadata", () => {
     it("sets the page title to Moments", () => {
@@ -35,7 +36,9 @@ describe("RootLayout structure", () => {
 
     it("passes children through to the body", () => {
         const body = tree().props.children;
-        expect(body.props.children).toBe("CONTENT");
+        const [content, swRegister] = body.props.children as [unknown, ReactElement];
+        expect(content).toBe("CONTENT");
+        expect(swRegister.type).toBe(SwRegister);
     });
 
     it("gives the body a black background", () => {
