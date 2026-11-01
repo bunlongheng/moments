@@ -35,7 +35,9 @@ describe("RootLayout structure", () => {
 
     it("passes children through to the body", () => {
         const body = tree().props.children;
-        expect(body.props.children).toBe("CONTENT");
+        // body renders [children, <SwRegister />] since the PWA commit
+        const [first] = ([] as unknown[]).concat(body.props.children as unknown);
+        expect(first).toBe("CONTENT");
     });
 
     it("gives the body a black background", () => {
