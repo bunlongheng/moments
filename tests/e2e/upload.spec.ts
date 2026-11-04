@@ -83,16 +83,21 @@ test.describe("Upload page", () => {
     test("shows and hides the drag overlay", async ({ page }) => {
         await page.goto("/upload");
         await expect(page.getByRole("button", { name: "+ Add Photos" })).toBeVisible();
-        // useEffect attaches drag listeners asynchronously after render; retry the dispatch
-        // until the overlay appears. Check first so we never dispatch a second time once
-        // the overlay is already visible (which would over-increment the drag counter).
+        // useIsomorphicLayoutEffect attaches drag listeners before paint, but in CI
+        // the waitForFunction may poll several times before the overlay appears,
+        // dispatching one dragenter per poll and over-incrementing dragCounter.
+        // Mirror the same loop on the leave side to drain every accumulated count.
         await page.waitForFunction(() => {
             if (document.body.textContent?.includes("Drop photos here")) return true;
             document.dispatchEvent(new Event("dragenter", { bubbles: true }));
             return false;
         });
         await expect(page.getByText("Drop photos here")).toBeVisible();
-        await page.evaluate(() => document.dispatchEvent(new Event("dragleave", { bubbles: true })));
+        await page.waitForFunction(() => {
+            if (!document.body.textContent?.includes("Drop photos here")) return true;
+            document.dispatchEvent(new Event("dragleave", { bubbles: true }));
+            return false;
+        });
         await expect(page.getByText("Drop photos here")).toBeHidden();
     });
 
