@@ -18,7 +18,7 @@ describe("RootLayout structure", () => {
     function tree() {
         return RootLayout({ children: "CONTENT" }) as ReactElement<{
             lang: string;
-            children: ReactElement<{ style: Record<string, string>; children: unknown }>;
+            children: ReactElement<{ style: Record<string, string>; children: unknown[] }>;
         }>;
     }
 
@@ -35,7 +35,7 @@ describe("RootLayout structure", () => {
 
     it("passes children through to the body", () => {
         const body = tree().props.children;
-        expect(body.props.children).toBe("CONTENT");
+        expect(body.props.children[0]).toBe("CONTENT");
     });
 
     it("gives the body a black background", () => {
