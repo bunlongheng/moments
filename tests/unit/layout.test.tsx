@@ -18,7 +18,7 @@ describe("RootLayout structure", () => {
     function tree() {
         return RootLayout({ children: "CONTENT" }) as ReactElement<{
             lang: string;
-            children: ReactElement<{ style: Record<string, string>; children: unknown }>;
+            children: ReactElement<{ style: Record<string, string>; children: unknown[] }>;
         }>;
     }
 
