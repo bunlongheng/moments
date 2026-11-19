@@ -92,7 +92,15 @@ test.describe("Upload page", () => {
             return false;
         });
         await expect(page.getByText("Drop photos here")).toBeVisible();
-        await page.evaluate(() => document.dispatchEvent(new Event("dragleave", { bubbles: true })));
+        // Mirror the show-loop: retry dragleave until the overlay disappears.  The
+        // enter-loop can dispatch more than one dragenter before React re-renders
+        // (async state update), so dragCounter may be > 1; we keep leaving until it
+        // reaches 0 rather than assuming a single dragleave is enough.
+        await page.waitForFunction(() => {
+            if (!document.body.textContent?.includes("Drop photos here")) return true;
+            document.dispatchEvent(new Event("dragleave", { bubbles: true }));
+            return false;
+        });
         await expect(page.getByText("Drop photos here")).toBeHidden();
     });
 
